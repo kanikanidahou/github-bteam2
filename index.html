@@ -101,5 +101,41 @@ window.addEventListener('load',function(event){
 <body>
   <div><canvas id="preview"></canvas></div>
   <textarea id="jan" rows="8" cols="40"></textarea>
+  
+    
+    <form method="post" name="form" target="dummy" action="https://kanikanidahou.github.io/github-bteam/">
+        <fieldset>
+            <div class="container">
+                <div class="row">
+                    <div class="col-lg-8">
+                        <h3 class="mt-5">
+                            Send To Notion<br>
+                            <small class="text-muted">本のバーコードを読んでNotionに追加</small>
+                        </h3>
+                        <div><canvas id="preview"></canvas></div> <!--quaggaJSのカメラがここに表示される-->
+                        <label class="col-form-label" for="inputDefault">ISBN:</label>
+                        <!--quaggaJSでバーコードから読み取ったISBNがここに入力される-->
+                        <input type="text" name="isbn" id="ISBN" class="form-control"><br>
+                        <button type="submit" onclick="GetData();" class="btn btn-primary">データ取得</button><br>
+                        <img src="" id="imagePlace"><br>
+                        <label class="col-form-label" for="inputDefault">画像URL</label> <!--画像URLを取得したらsrcを設定する-->
+                        <input type="text" name="imageSrc" id="imageSrc" class="form-control"><br>
+                        <label class="col-form-label" for="inputDefault">タイトル</label>
+                        <input type="text" name="title" id="title" class="form-control"><br>
+                        <label class="col-form-label" for="inputDefault">サブタイトル</label>
+                        <input type="text" name="subtitle" id="subtitle" class="form-control"><br>
+                        <label class="col-form-label" for="inputDefault">著者</label>
+                        <input type="text" name="authors" id="authors" class="form-control"><br>
+                        <label class="col-form-label" for="inputDefault">発売日</label>
+                        <input type="text" name="publishedDate" id="publishedDate" class="form-control"><br>
+                        <label class="col-form-label" for="inputDefault">ページ数</label>
+                        <input type="text" name="pageCount" id="pageCount" class="form-control"><br>
+                        <button type="submit" class="btn btn-primary">Notionに送信</button><br>
+                    </div>
+                </div>
+            </div>
+        </fieldset>
+    </form>
+
 </body>
 </html>
