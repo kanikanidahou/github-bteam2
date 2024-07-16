@@ -6,10 +6,11 @@
     <meta name="viewport"
         content="width=device-width, initial-scale=1, minimum-scale=0.1, maximum-scale=4,user-scalable=yes">
     <!-- quaggaJSの読み込み -->
-    <script src="./quagga.min.js"></script>
+    <script src="../js/quagga.min.js"></script>
     <script>
         var DetectedCount = 0, DetectedCode = "";
-        var video, tmp, tmp_ctx, jan, prev, prev_ctx, w, h, mw, mh, x1, y1;
+        var video, tmp, tmp_ctx, jantxt, prev, prev_ctx, w, h, mw, mh, x1, y1;
+
         window.addEventListener('load', function (event) {
             video = document.createElement('video');
             video.setAttribute("autoplay", "");
@@ -20,7 +21,8 @@
             prev_ctx = prev.getContext("2d", { willReadFrequently: true });
             tmp = document.createElement('canvas');
             tmp_ctx = tmp.getContext("2d", { willReadFrequently: true });
-            jan = document.getElementById("jan");
+            //jan=document.getElementById("jan");
+            jantxt = document.getElementById("jantxt");
 
             //カメラ使用の許可ダイアログが表示される
             navigator.mediaDevices.getUserMedia(
@@ -33,7 +35,7 @@
                     setTimeout(Scan, 500, true);
                 }
             ).catch( //許可されなかった場合
-                function (err) { jan.value += err + '\n'; }
+                function (err) { jantxt.value += err + '\n'; }
             );
 
             function Scan(first) {
@@ -75,10 +77,12 @@
                             src: reader.result,
                         };
                         Quagga.decodeSingle(config, function () { });
+                        //config["locator"]["patchSize"]="x-large";
+                        //Quagga.decodeSingle(config,function(){});
                     }
                     reader.readAsDataURL(blob);
                 });
-                setTimeout(Scan, 50, false);
+                setTimeout(Scan, 100, false);
             }
 
             Quagga.onDetected(function (result) {
@@ -90,20 +94,72 @@
                     DetectedCode = result.codeResult.code;
                 }
                 if (DetectedCount >= 3) {
-                    console.log(result.codeResult.code);
-                    jan.value += result.codeResult.code + '\n';
-                    jan.scrollTop = jan.scrollHeight;
+                    jantxt.value = result.codeResult.code;
                     DetectedCode = '';
                     DetectedCount = 0;
                 }
             });
         });
+
+        function GetData() {
+            url = "https://script.google.com/macros/s/your_script_id/exec"; // ここにGoogle Apps ScriptのURLを貼り付ける
+            isbn = document.getElementById("ISBN").value;
+
+            let request = new XMLHttpRequest();
+            request.open('GET', url + '?isbn=' + isbn);
+            request.responseType = 'json';
+            request.send();
+            request.onload = function () {
+                const result = request.response;
+                document.getElementById("title").value = result.title;
+                document.getElementById("subtitle").value = result.subtitle;
+                document.getElementById("authors").value = result.authors;
+                document.getElementById("publishedDate").value = result.publishedDate;
+                document.getElementById("pageCount").value = result.pageCount;
+                document.getElementById("imagePlace").src = result.imageSrc;
+                document.getElementById("imageSrc").value = result.imageSrc;
+            }
+        }
     </script>
 </head>
 
 <body>
     <div><canvas id="preview"></canvas></div>
-    <textarea id="jan" rows="8" cols="40"></textarea>
+    
+    <form method="post" name="form" target="dummy" action="https://kanikanidahou.github.io/github-bteam/">
+        <fieldset>
+            <div class="container">
+                <div class="row">
+                    <div class="col-lg-8">
+                        <h3 class="mt-5">
+                            Notionへ送信<br>
+                            <small class="text-muted">本のバーコードを読み取ってNotionに追加</small>
+                        </h3>
+                        <div><canvas id="preview"></canvas></div> <!-- quaggaJSのカメラがここに表示される -->
+                        <label class="col-form-label" for="inputDefault">ISBN:</label>
+                        <!-- quaggaJSでバーコードから読み取ったISBNがここに入力される -->
+                        <input type="text" name="isbn" id="ISBN" class="form-control"><br>
+                        <button type="button" onclick="GetData();" class="btn btn-primary">データ取得</button><br>
+                        <img src="" id="imagePlace"><br>
+                        <label class="col-form-label" for="inputDefault">画像URL</label> <!-- 画像URLを取得したらsrcを設定する -->
+                        <input type="text" name="imageSrc" id="imageSrc" class="form-control"><br>
+                        <label class="col-form-label" for="inputDefault">タイトル</label>
+                        <input type="text" name="title" id="title" class="form-control"><br>
+                        <label class="col-form-label" for="inputDefault">サブタイトル</label>
+                        <input type="text" name="subtitle" id="subtitle" class="form-control"><br>
+                        <label class="col-form-label" for="inputDefault">著者</label>
+                        <input type="text" name="authors" id="authors" class="form-control"><br>
+                        <label class="col-form-label" for="inputDefault">発売日</label>
+                        <input type="text" name="publishedDate" id="publishedDate" class="form-control"><br>
+                        <label class="col-form-label" for="inputDefault">ページ数</label>
+                        <input type="text" name="pageCount" id="pageCount" class="form-control"><br>
+                        <button type="submit" class="btn btn-primary">Notionに送信</button><br>
+                    </div>
+                </div>
+            </div>
+        </fieldset>
+    </form>
+
 </body>
 
 </html>
