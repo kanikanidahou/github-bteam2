@@ -106,6 +106,7 @@
                         document.getElementById("authors").value = (volumeInfo.authors || []).join(', ');
                         document.getElementById("publishedDate").value = volumeInfo.publishedDate || '';
                         document.getElementById("pageCount").value = volumeInfo.pageCount || '';
+                         const imageUrl = volumeInfo.imageLinks ? volumeInfo.imageLinks.thumbnail : 'https://via.placeholder.com/150';
                         document.getElementById("imagePlace").src = volumeInfo.imageLinks ? volumeInfo.imageLinks.thumbnail : '';
                         document.getElementById("imageSrc").value = volumeInfo.imageLinks ? volumeInfo.imageLinks.thumbnail : '';
                     } else {
