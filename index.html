@@ -89,6 +89,25 @@ window.addEventListener('load', function(event) {
             }
           }
         });
+        function GetData() {
+            url = "https://www.googleapis.com/books/v1/volumes?q=isbn:"; //ISBNの手前まで
+            isbn = document.getElementById("ISBN").value;
+
+            let request = new XMLHttpRequest();
+            request.open('GET', url + isbn);
+            request.responseType = 'json';
+            request.send();
+            request.onload = function () {
+                const result = request.response;
+                document.getElementById("title").value = result["items"][0]["volumeInfo"]["title"];
+                document.getElementById("subtitle").value = result["items"][0]["volumeInfo"]["subtitle"];
+                document.getElementById("authors").value = result["items"][0]["volumeInfo"]["authors"];
+                document.getElementById("publishedDate").value = result["items"][0]["volumeInfo"]["publishedDate"];
+                document.getElementById("pageCount").value = result["items"][0]["volumeInfo"]["pageCount"];
+                document.getElementById("imagePlace").src = "https://images-na.ssl-images-amazon.com/images/P/" + toISBN10(isbn) + ".09.LZZZZZZZ.jpg";
+                document.getElementById("imageSrc").value = "https://images-na.ssl-images-amazon.com/images/P/" + toISBN10(isbn) + ".09.LZZZZZZZ.jpg";
+            }
+        }
       }
       reader.readAsDataURL(blob);
     });
