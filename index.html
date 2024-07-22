@@ -97,35 +97,61 @@ window.addEventListener('load', function(event) {
   }
 });
 
-function sendToGoogleAppsScript() {
-  const url = 'https://script.google.com/macros/s/AKfycbwn6eO-9KAgTEx06TPEF19ZSxsuDSJ_1nygOQzH6GetAqnAkt7G8IzuUbuxYjpwjBU/exec'; // Google Apps ScriptのウェブアプリURL
+function GetData() {
+  const isbn = document.getElementById("ISBN").value;
+  const url = `https://www.googleapis.com/books/v1/volumes?q=isbn:${isbn}`;
+
+  fetch(url)
+    .then(response => response.json())
+    .then(data => {
+      if (data.items && data.items.length > 0) {
+        const volumeInfo = data.items[0].volumeInfo;
+        document.getElementById("title").value = volumeInfo.title || "";
+        document.getElementById("subtitle").value = volumeInfo.subtitle || "";
+        document.getElementById("authors").value = (volumeInfo.authors || []).join(", ") || "";
+        document.getElementById("publishedDate").value = volumeInfo.publishedDate || "";
+        document.getElementById("pageCount").value = volumeInfo.pageCount || "";
+        const imageUrl = volumeInfo.imageLinks && volumeInfo.imageLinks.thumbnail ? volumeInfo.imageLinks.thumbnail : "";
+        document.getElementById("imagePlace").src = imageUrl;
+        document.getElementById("imageSrc").value = imageUrl;
+      } else {
+        console.error("No items found for the ISBN.");
+      }
+    })
+    .catch(error => console.error("Error fetching data:", error));
+}
+
+function sendToNotion() {
+  const scriptUrl = 'YOUR_GOOGLE_APPS_SCRIPT_URL'; // Google Apps ScriptのURL
+
   const data = {
-    isbn: document.getElementById('ISBN').value,
-    title: document.getElementById('title').value,
-    subtitle: document.getElementById('subtitle').value,
-    authors: document.getElementById('authors').value,
-    publishedDate: document.getElementById('publishedDate').value,
-    pageCount: document.getElementById('pageCount').value,
-    imageSrc: document.getElementById('imageSrc').value
+    isbn: document.getElementById("ISBN").value,
+    title: document.getElementById("title").value,
+    subtitle: document.getElementById("subtitle").value,
+    authors: document.getElementById("authors").value,
+    publishedDate: document.getElementById("publishedDate").value,
+    pageCount: document.getElementById("pageCount").value,
+    imageSrc: document.getElementById("imageSrc").value
   };
 
-  fetch(url, {
+  fetch(scriptUrl, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json'
     },
-    body: JSON.stringify(data),
-    mode: 'no-cors' // CORS設定
+    body: JSON.stringify(data)
   })
-  .then(response => response.text())
-  .then(result => console.log('Success:', result))
+  .then(response => response.json())
+  .then(result => {
+    console.log('Success:', result);
+  })
   .catch(error => console.error('Error:', error));
 }
 </script>
 </head>
 <body>
   <div><canvas id="preview"></canvas></div>
-  <form method="post" name="form" target="dummy">
+  <form>
     <fieldset>
       <div class="container">
         <div class="row">
@@ -135,12 +161,10 @@ function sendToGoogleAppsScript() {
               <small class="text-muted">本のバーコードを読んでNotionに追加</small>
             </h3>
             <label class="col-form-label" for="ISBN">ISBN:</label>
-            <!-- quaggaJSでバーコードから読み取ったISBNがここに入力される -->
             <input type="text" name="isbn" id="ISBN" class="form-control"><br>
-            <button type="button" onclick="sendToGoogleAppsScript();" class="btn btn-primary">Notionに送信</button><br>
+            <button type="button" onclick="GetData();" class="btn btn-primary">データ取得</button><br>
             <img src="" id="imagePlace"><br>
             <label class="col-form-label" for="imageSrc">画像URL</label>
-            <!-- 画像URLを取得したらsrcを設定する -->
             <input type="text" name="imageSrc" id="imageSrc" class="form-control"><br>
             <label class="col-form-label" for="title">タイトル</label>
             <input type="text" name="title" id="title" class="form-control"><br>
@@ -152,6 +176,7 @@ function sendToGoogleAppsScript() {
             <input type="text" name="publishedDate" id="publishedDate" class="form-control"><br>
             <label class="col-form-label" for="pageCount">ページ数</label>
             <input type="text" name="pageCount" id="pageCount" class="form-control"><br>
+            <button type="button" onclick="sendToNotion();" class="btn btn-primary">Notionに送信</button><br>
           </div>
         </div>
       </div>
