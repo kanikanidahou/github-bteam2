@@ -3,159 +3,63 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>カメラスキャンとデータ送信</title>
+    <title>バーコードスキャンとデータ送信</title>
+    <script src="./quagga.min.js"></script>
     <style>
-        body {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            padding: 20px;
-            margin: 0;
-            font-family: Arial, sans-serif;
-        }
-
-        #camera-container {
-            position: relative;
-            width: 100%;
-            max-width: 640px;
-            height: 480px;
-            margin-bottom: 20px;
-        }
-
         #barcode-scanner {
-            position: relative;
             width: 100%;
-            height: 100%;
-        }
-
-        #barcode-scanner video,
-        #barcode-scanner canvas {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-        }
-
-         #barcode-scanner canvas {
-            border: 2px solid ; /* 枠線のスタイル */
-            box-sizing: border-box;
-        }
-
-        #form-container {
-            width: 100%;
-            max-width: 640px;
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-        }
-
-        #form-container input, #form-container button {
-            padding: 8px;
-            margin-top: 5px;
-        }
-
-        button {
-            background-color: #4CAF50;
-            color: white;
-            border: none;
-            cursor: pointer;
-        }
-
-        button:hover {
-            background-color: #45a049;
-        }
-
-        textarea {
-            width: 100%;
-            max-width: 640px;
-            height: 150px;
+            height: 300px;
+            border: 1px solid black;
             margin-top: 20px;
-            padding: 10px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            box-sizing: border-box;
-            resize: none;
         }
     </style>
 </head>
 <body>
-    <h1>カメラスキャンとデータ送信</h1>
+    <h1>書籍データの送信</h1>
+    <form id="bookForm">
+        <label>ISBN:</label>
+        <input type="text" id="isbn" required><br>
+        <label>タイトル:</label>
+        <input type="text" id="title" required><br>
+        <label>サブタイトル:</label>
+        <input type="text" id="subtitle"><br>
+        <label>著者:</label>
+        <input type="text" id="authors"><br>
+        <label>出版日:</label>
+        <input type="text" id="publishedDate"><br>
+        <label>ページ数:</label>
+        <input type="text" id="pageCount"><br>
+        <label>画像URL:</label>
+        <input type="text" id="imageUrl"><br>
+        <button type="button" onclick="sendData()">データ送信</button>
+    </form>
 
-    <div id="camera-container">
-        <div id="barcode-scanner">
-            <video id="video" autoplay></video>
-            <canvas id="canvas"></canvas>
-        </div>
-    </div>
+    <textarea id="jan" rows="10" cols="50" readonly></textarea>
 
-    <div id="form-container">
-        <form id="bookForm">
-            <label for="isbn">ISBN:</label>
-            <input type="text" id="isbn" required><br>
-            <label for="title">タイトル:</label>
-            <input type="text" id="title" required><br>
-            <label for="subtitle">サブタイトル:</label>
-            <input type="text" id="subtitle"><br>
-            <label for="authors">著者:</label>
-            <input type="text" id="authors"><br>
-            <label for="publishedDate">出版日:</label>
-            <input type="text" id="publishedDate"><br>
-            <label for="pageCount">ページ数:</label>
-            <input type="text" id="pageCount"><br>
-            <label for="imageUrl">画像URL:</label>
-            <input type="text" id="imageUrl"><br>
-            <button type="button" onclick="sendData()">データ送信</button>
-        </form>
-    </div>
-
-    <textarea id="jan" readonly></textarea>
+    <div id="barcode-scanner"></div>
 
     <script>
-        let video = document.getElementById('video');
-        let canvas = document.getElementById('canvas');
-        let ctx = canvas.getContext('2d');
+        // QuaggaJSの初期化
+        function startScanner() {
+            Quagga.init({
+                inputStream: {
+                    name: "Live",
+                    type: "LiveStream",
+                    target: document.querySelector('#barcode-scanner') // スキャン表示エリア
+                },
+                decoder: {
+                    readers: ["ean_reader"] // 対応するバーコードリーダーの種類
+                }
+            }, function(err) {
+                if (err) {
+                    console.log(err);
+                    return;
+                }
+                Quagga.start();
+            });
 
-        async function startCamera() {
-            try {
-                const stream = await navigator.mediaDevices.getUserMedia({
-                    audio: false,
-                    video: {
-                        facingMode: "environment",
-                        width: { ideal: 640 },
-                        height: { ideal: 480 }
-                    }
-                });
-                video.srcObject = stream;
-                video.onloadedmetadata = () => {
-                    video.play();
-                    canvas.width = video.videoWidth;
-                    canvas.height = video.videoHeight;
-                    setTimeout(Scan, 500, true);
-                };
-            } catch (error) {
-                console.error("カメラにアクセスできません:", error);
-                document.getElementById('jan').value += error + '\n';
-            }
-        }
-
-        function Scan(first) {
-            if (first) {
-                canvas.width = video.videoWidth;
-                canvas.height = video.videoHeight;
-            }
-
-            // ビデオフレームをキャンバスに描画
-            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-            
-            // 枠線を描画
-            ctx.beginPath();
-            ctx.strokeStyle = "rgb(255,0,0)";
-            ctx.lineWidth = 2;
-            ctx.rect(150, 200, canvas.width - 300, canvas.height - 10); // 枠線の位置とサイズ
-            ctx.stroke();
-
-            setTimeout(Scan, 500, false);
+            // ここでスキャンを開始する
+            Scan(true);
         }
 
         function sendData() {
@@ -167,6 +71,7 @@
             const pageCount = document.getElementById('pageCount').value;
             const imageUrl = document.getElementById('imageUrl').value;
 
+            // Google Apps ScriptのWebアプリURL
             const scriptUrl = 'https://script.google.com/macros/s/AKfycbwn6eO-9KAgTEx06TPEF19ZSxsuDSJ_1nygOQzH6GetAqnAkt7G8IzuUbuxYjpwjBU/exec';
 
             fetch(scriptUrl, {
@@ -194,7 +99,10 @@
             });
         }
 
-        document.addEventListener('DOMContentLoaded', startCamera);
+        // ページ読み込み時にスキャナーを開始
+        document.addEventListener('DOMContentLoaded', (event) => {
+            startScanner();
+        });
     </script>
 </body>
 </html>
