@@ -21,29 +21,23 @@
             tmp_ctx = tmp.getContext("2d", { willReadFrequently: true });
             jan = document.getElementById("jan");
 
-            //カメラ使用の許可ダイアログが表示される
             navigator.mediaDevices.getUserMedia(
-                //マイクはオフ, カメラの設定 背面カメラを希望する 640×480を希望する
                 { "audio": false, "video": { "facingMode": "environment", "width": { "ideal": 640 }, "height": { "ideal": 480 } } }
-            ).then( //許可された場合
+            ).then(
                 function (stream) {
                     video.srcObject = stream;
-                    //0.5秒毎にスキャンする
                     setTimeout(Scan, 500, true);
                 }
-            ).catch( //許可されなかった場合
+            ).catch(
                 function (err) { jan.value += err + '\n'; }
             );
 
             function Scan(first) {
                 if (first) {
-                    //選択された幅高さ
                     w = video.videoWidth;
                     h = video.videoHeight;
-                    //画面上の表示サイズ
                     prev.style.width = (w / 2) + "px";
                     prev.style.height = (h / 2) + "px";
-                    //内部のサイズ
                     prev.setAttribute("width", w);
                     prev.setAttribute("height", h);
                     mw = w * 0.5;
@@ -67,7 +61,7 @@
                         let config = {
                             decoder: {
                                 readers: ["ean_reader", "ean_8_reader"],
-                                multiple: false, //同時に複数のバーコードを解析しない
+                                multiple: false,
                             },
                             locator: { patchSize: "large", halfSample: false },
                             locate: false,
@@ -81,7 +75,6 @@
             }
 
             Quagga.onDetected(function (result) {
-                //読み取り誤差が多いため、3回連続で同じ値だった場合に成功とする
                 if (DetectedCode == result.codeResult.code) {
                     DetectedCount++;
                 } else {
@@ -93,14 +86,14 @@
                     jan.value += result.codeResult.code + '\n';
                     jan.scrollTop = jan.scrollHeight;
                     document.getElementById("ISBN").value = result.codeResult.code;
+                    GetData(result.codeResult.code);
                     DetectedCode = '';
                     DetectedCount = 0;
                 }
             });
         });
 
-        function GetData() {
-            let isbn = document.getElementById("ISBN").value;
+        function GetData(isbn) {
             let url = `https://www.googleapis.com/books/v1/volumes?q=isbn:${isbn}`;
 
             fetch(url)
@@ -126,8 +119,8 @@
         }
 
         async function sendToNotion() {
-            const token = 'secret_lruJvyFNd3aRm8HD5qmZX5JfKeqQdYaGCTxb5lP1z4E'; // Notion APIトークンを入力してください
-            const databaseId = '2517262d6cc0429797696292c1e83583'; // NotionデータベースIDを入力してください
+            const token = 'YOUR_NOTION_API_TOKEN'; // Notion APIトークンを入力してください
+            const databaseId = 'YOUR_DATABASE_ID'; // NotionデータベースIDを入力してください
             const url = `https://api.notion.com/v1/pages`;
 
             const headers = {
@@ -217,7 +210,7 @@
                         <div><canvas id="preview"></canvas></div>
                         <label class="col-form-label" for="inputDefault">ISBN:</label>
                         <input type="text" name="isbn" id="ISBN" class="form-control"><br>
-                        <button type="button" onclick="GetData();" class="btn btn-primary">データ取得</button><br>
+                        <button type="button" onclick="GetData(document.getElementById('ISBN').value);" class="btn btn-primary">データ取得</button><br>
                         <img src="" id="imagePlace"><br>
                         <label class="col-form-label" for="inputDefault">画像URL</label>
                         <input type="text" name="imageSrc" id="imageSrc" class="form-control"><br>
@@ -239,4 +232,3 @@
     </form>
 </body>
 </html>
-
