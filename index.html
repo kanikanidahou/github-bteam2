@@ -114,7 +114,8 @@ function sendToGoogleAppsScript() {
     headers: {
       'Content-Type': 'application/json'
     },
-    body: JSON.stringify(data)
+    body: JSON.stringify(data),
+    mode: 'cors' // CORS設定
   })
   .then(response => response.text())
   .then(result => console.log('Success:', result))
