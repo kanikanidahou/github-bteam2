@@ -13,6 +13,7 @@
             padding: 20px;
             margin: 0;
             font-family: Arial, sans-serif;
+            box-sizing: border-box; /* 全体のボックスサイズを調整 */
         }
 
         #barcode-scanner {
@@ -21,6 +22,14 @@
             height: 300px;
             border: 1px solid black;
             margin-bottom: 20px; /* カメラの下にフォームを配置するための余白 */
+            overflow: hidden; /* はみ出る部分を隠す */
+            position: relative; /* 子要素を相対位置にするための設定 */
+        }
+
+        #barcode-scanner video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover; /* 画像のアスペクト比を保ちながらサイズを調整 */
         }
 
         #form-container {
@@ -63,7 +72,9 @@
 <body>
     <h1>書籍データの送信</h1>
 
-    <div id="barcode-scanner"></div>
+    <div id="barcode-scanner">
+        <video id="video" autoplay></video>
+    </div>
 
     <div id="form-container">
         <form id="bookForm">
@@ -88,89 +99,16 @@
     <textarea id="jan" readonly></textarea>
 
     <script>
-        let video = document.createElement('video');
-        let prev = document.createElement('canvas');
-        let prev_ctx = prev.getContext('2d');
-        let tmp = document.createElement('canvas');
-        let tmp_ctx = tmp.getContext('2d');
+        let video = document.getElementById('video');
         let DetectedCode = '';
         let DetectedCount = 0;
 
-        function Scan(first) {
-            if (first) {
-                //選択された幅高さ
-                let w = video.videoWidth;
-                let h = video.videoHeight;
-                //画面上の表示サイズ
-                prev.style.width = (w / 2) + "px";
-                prev.style.height = (h / 2) + "px";
-                //内部のサイズ
-                prev.setAttribute("width", w);
-                prev.setAttribute("height", h);
-                let mw = w * 0.5;
-                let mh = w * 0.2;
-                let x1 = (w - mw) / 2;
-                let y1 = (h - mh) / 2;
-
-                prev_ctx.drawImage(video, 0, 0, w, h);
-                prev_ctx.beginPath();
-                prev_ctx.strokeStyle = "rgb(255,0,0)";
-                prev_ctx.lineWidth = 2;
-                prev_ctx.rect(x1, y1, mw, mh);
-                prev_ctx.stroke();
-                tmp.setAttribute("width", mw);
-                tmp.setAttribute("height", mh);
-                tmp_ctx.drawImage(prev, x1, y1, mw, mh, 0, 0, mw, mh);
-
-                tmp.toBlob(function (blob) {
-                    let reader = new FileReader();
-                    reader.onload = function () {
-                        let config = {
-                            decoder: {
-                                readers: ["ean_reader", "ean_8_reader"],
-                                multiple: false, //同時に複数のバーコードを解析しない
-                            },
-                            locator: { patchSize: "large", halfSample: false },
-                            locate: false,
-                            src: reader.result,
-                        };
-                        Quagga.decodeSingle(config, function (result) {
-                            // 必要に応じてここで結果を処理する
-                        });
-                    }
-                    reader.readAsDataURL(blob);
-                });
-            } else {
-                // バーコードスキャンの処理を続ける
-                setTimeout(function() { Scan(false); }, 50);
-            }
-        }
-
-        Quagga.onDetected(function (result) {
-            //読み取り誤差が多いため、3回連続で同じ値だった場合に成功とする
-            if (DetectedCode == result.codeResult.code) {
-                DetectedCount++;
-            } else {
-                DetectedCount = 0;
-                DetectedCode = result.codeResult.code;
-            }
-            if (DetectedCount >= 3) {
-                console.log(result.codeResult.code);
-                let jan = document.getElementById('jan');
-                jan.value += result.codeResult.code + '\n';
-                jan.scrollTop = jan.scrollHeight;
-                DetectedCode = '';
-                DetectedCount = 0;
-            }
-        });
-
-        // QuaggaJSの初期化
         function startScanner() {
             Quagga.init({
                 inputStream: {
                     name: "Live",
                     type: "LiveStream",
-                    target: document.querySelector('#barcode-scanner') // スキャン表示エリア
+                    target: video // スキャン表示エリア
                 },
                 decoder: {
                     readers: ["ean_reader"] // 対応するバーコードリーダーの種類
@@ -183,8 +121,10 @@
                 Quagga.start();
             });
 
-            // ここでスキャンを開始する
-            Scan(true);
+            Quagga.onDetected(function(data) {
+                document.getElementById('isbn').value = data.codeResult.code;
+                Quagga.stop();
+            });
         }
 
         function sendData() {
