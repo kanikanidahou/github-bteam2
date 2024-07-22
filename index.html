@@ -7,7 +7,7 @@
     <script src="./quagga.min.js"></script>
     <script>
         var DetectedCount = 0, DetectedCode = "";
-        var video, tmp, tmp_ctx, jan, prev, prev_ctx, w, h, mw, mh, x1, y1;
+        var video, tmp, tmp_ctx, prev, prev_ctx, w, h, mw, mh, x1, y1;
 
         window.addEventListener('load', function (event) {
             video = document.createElement('video');
@@ -19,7 +19,6 @@
             prev_ctx = prev.getContext("2d", { willReadFrequently: true });
             tmp = document.createElement('canvas');
             tmp_ctx = tmp.getContext("2d", { willReadFrequently: true });
-            jan = document.getElementById("jan");
 
             navigator.mediaDevices.getUserMedia(
                 { "audio": false, "video": { "facingMode": "environment", "width": { "ideal": 640 }, "height": { "ideal": 480 } } }
@@ -29,7 +28,7 @@
                     setTimeout(Scan, 500, true);
                 }
             ).catch(
-                function (err) { jan.value += err + '\n'; }
+                function (err) { console.error('Error:', err); }
             );
 
             function Scan(first) {
@@ -82,9 +81,7 @@
                     DetectedCode = result.codeResult.code;
                 }
                 if (DetectedCount >= 3) {
-                    console.log(result.codeResult.code);
-                    jan.value += result.codeResult.code + '\n';
-                    jan.scrollTop = jan.scrollHeight;
+                    console.log(result.codeResult.code); // コンソールに出力
                     document.getElementById("ISBN").value = result.codeResult.code;
                     GetData(result.codeResult.code);
                     DetectedCode = '';
@@ -107,7 +104,6 @@
                         document.getElementById("publishedDate").value = volumeInfo.publishedDate || '';
                         document.getElementById("pageCount").value = volumeInfo.pageCount || '';
 
-                        // 画像URLが存在する場合はそれを使用し、存在しない場合はデフォルト画像を設定
                         const imageUrl = volumeInfo.imageLinks ? volumeInfo.imageLinks.thumbnail : 'https://via.placeholder.com/150';
                         document.getElementById("imagePlace").src = imageUrl;
                         document.getElementById("imageSrc").value = imageUrl;
@@ -122,8 +118,8 @@
         }
 
         async function sendToNotion() {
-            const token = 'secret_lruJvyFNd3aRm8HD5qmZX5JfKeqQdYaGCTxb5lP1z4E'; // Notion APIトークンを入力してください
-            const databaseId = '2517262d6cc0429797696292c1e83583'; // NotionデータベースIDを入力してください
+            const token = 'secret_lruJvyFNd3aRm8HD5qmZX5JfKeqQdYaGCTxb5lP1z4E';
+            const databaseId = '2517262d6cc0429797696292c1e83583';
             const url = `https://api.notion.com/v1/pages`;
 
             const headers = {
@@ -200,7 +196,6 @@
 </head>
 <body>
     <div><canvas id="preview"></canvas></div>
-    <textarea id="jan" rows="0" cols="0"></textarea>
     <form method="post" name="form" target="dummy" action="">
         <fieldset>
             <div class="container">
