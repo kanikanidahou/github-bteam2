@@ -11,28 +11,25 @@
             flex-direction: column;
             align-items: center;
             padding: 20px;
-        }
-
-        #container {
-            position: relative;
-            width: 100%;
-            max-width: 600px;
-            margin-bottom: 20px;
+            margin: 0;
         }
 
         #barcode-scanner {
             width: 100%;
+            max-width: 600px;
             height: 300px;
             border: 1px solid black;
-            position: absolute;
-            top: 0;
-            left: 0;
+            margin-bottom: 20px; /* カメラの下にフォームを配置するための余白 */
         }
 
         #form-container {
-            position: relative;
-            z-index: 1; /* フォームがカメラの映像の上に表示されるようにする */
-            margin-top: 320px; /* カメラの表示領域とフォームを離すため */
+            width: 100%;
+            max-width: 600px;
+        }
+
+        #form-container form {
+            display: flex;
+            flex-direction: column;
         }
 
         textarea {
@@ -44,27 +41,26 @@
 <body>
     <h1>書籍データの送信</h1>
 
-    <div id="container">
-        <div id="barcode-scanner"></div>
-        <div id="form-container">
-            <form id="bookForm">
-                <label>ISBN:</label>
-                <input type="text" id="isbn" required><br>
-                <label>タイトル:</label>
-                <input type="text" id="title" required><br>
-                <label>サブタイトル:</label>
-                <input type="text" id="subtitle"><br>
-                <label>著者:</label>
-                <input type="text" id="authors"><br>
-                <label>出版日:</label>
-                <input type="text" id="publishedDate"><br>
-                <label>ページ数:</label>
-                <input type="text" id="pageCount"><br>
-                <label>画像URL:</label>
-                <input type="text" id="imageUrl"><br>
-                <button type="button" onclick="sendData()">データ送信</button>
-            </form>
-        </div>
+    <div id="barcode-scanner"></div>
+
+    <div id="form-container">
+        <form id="bookForm">
+            <label>ISBN:</label>
+            <input type="text" id="isbn" required><br>
+            <label>タイトル:</label>
+            <input type="text" id="title" required><br>
+            <label>サブタイトル:</label>
+            <input type="text" id="subtitle"><br>
+            <label>著者:</label>
+            <input type="text" id="authors"><br>
+            <label>出版日:</label>
+            <input type="text" id="publishedDate"><br>
+            <label>ページ数:</label>
+            <input type="text" id="pageCount"><br>
+            <label>画像URL:</label>
+            <input type="text" id="imageUrl"><br>
+            <button type="button" onclick="sendData()">データ送信</button>
+        </form>
     </div>
 
     <textarea id="jan" rows="10" cols="50" readonly></textarea>
