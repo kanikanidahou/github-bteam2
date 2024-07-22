@@ -146,13 +146,13 @@
             }
 
             // ビデオフレームをキャンバスに描画
-            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+            
 
             // 枠線を描画
             ctx.beginPath();
             ctx.strokeStyle = "rgb(255,0,0)";
             ctx.lineWidth = 2;
-            ctx.rect(50, 50, canvas.width - 100, canvas.height - 100); // 枠線の位置とサイズ
+            ctx.rect(50, 50, canvas.width - 300, canvas.height - 200); // 枠線の位置とサイズ
             ctx.stroke();
 
             setTimeout(Scan, 500, false);
