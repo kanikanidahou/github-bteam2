@@ -97,97 +97,28 @@ window.addEventListener('load', function(event) {
   }
 });
 
-function sendToNotion() {
-  const notionToken = 'YOUR_NOTION_INTEGRATION_TOKEN'; // NotionのAPIトークン
-  const databaseId = 'YOUR_DATABASE_ID'; // NotionのデータベースID
-
-  const isbn = document.getElementById("ISBN").value;
-  const title = document.getElementById("title").value;
-  const subtitle = document.getElementById("subtitle").value;
-  const authors = document.getElementById("authors").value;
-  const publishedDate = document.getElementById("publishedDate").value;
-  const pageCount = document.getElementById("pageCount").value;
-  const imageSrc = document.getElementById("imageSrc").value;
-
+function sendToGoogleAppsScript() {
+  const url = 'YOUR_GOOGLE_APPS_SCRIPT_WEB_APP_URL'; // Google Apps ScriptのウェブアプリURL
   const data = {
-    parent: { database_id: databaseId },
-    properties: {
-      Title: {
-        title: [
-          {
-            text: {
-              content: title
-            }
-          }
-        ]
-      },
-      ISBN: {
-        rich_text: [
-          {
-            text: {
-              content: isbn
-            }
-          }
-        ]
-      },
-      Subtitle: {
-        rich_text: [
-          {
-            text: {
-              content: subtitle
-            }
-          }
-        ]
-      },
-      Authors: {
-        rich_text: [
-          {
-            text: {
-              content: authors
-            }
-          }
-        ]
-      },
-      PublishedDate: {
-        rich_text: [
-          {
-            text: {
-              content: publishedDate
-            }
-          }
-        ]
-      },
-      PageCount: {
-        rich_text: [
-          {
-            text: {
-              content: pageCount
-            }
-          }
-        ]
-      },
-      Image: {
-        url: imageSrc
-      }
-    }
+    isbn: document.getElementById('ISBN').value,
+    title: document.getElementById('title').value,
+    subtitle: document.getElementById('subtitle').value,
+    authors: document.getElementById('authors').value,
+    publishedDate: document.getElementById('publishedDate').value,
+    pageCount: document.getElementById('pageCount').value,
+    imageSrc: document.getElementById('imageSrc').value
   };
 
-  fetch('https://api.notion.com/v1/pages', {
+  fetch(url, {
     method: 'POST',
     headers: {
-      'Authorization': `Bearer ${notionToken}`,
-      'Content-Type': 'application/json',
-      'Notion-Version': '2022-06-28' // または最新のNotion APIバージョン
+      'Content-Type': 'application/json'
     },
     body: JSON.stringify(data)
   })
-  .then(response => response.json())
-  .then(data => {
-    console.log('Success:', data);
-  })
-  .catch((error) => {
-    console.error('Error:', error);
-  });
+  .then(response => response.text())
+  .then(result => console.log('Success:', result))
+  .catch(error => console.error('Error:', error));
 }
 </script>
 </head>
@@ -205,7 +136,7 @@ function sendToNotion() {
             <label class="col-form-label" for="ISBN">ISBN:</label>
             <!-- quaggaJSでバーコードから読み取ったISBNがここに入力される -->
             <input type="text" name="isbn" id="ISBN" class="form-control"><br>
-            <button type="button" onclick="GetData();" class="btn btn-primary">データ取得</button><br>
+            <button type="button" onclick="sendToGoogleAppsScript();" class="btn btn-primary">Notionに送信</button><br>
             <img src="" id="imagePlace"><br>
             <label class="col-form-label" for="imageSrc">画像URL</label>
             <!-- 画像URLを取得したらsrcを設定する -->
@@ -220,7 +151,6 @@ function sendToNotion() {
             <input type="text" name="publishedDate" id="publishedDate" class="form-control"><br>
             <label class="col-form-label" for="pageCount">ページ数</label>
             <input type="text" name="pageCount" id="pageCount" class="form-control"><br>
-            <button type="button" onclick="sendToNotion();" class="btn btn-primary">Notionに送信</button><br>
           </div>
         </div>
       </div>
