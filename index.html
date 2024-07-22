@@ -97,46 +97,103 @@ window.addEventListener('load', function(event) {
   }
 });
 
-// GetData 関数を Scan 関数の外に移動
-function GetData() {
-  const url = "https://www.googleapis.com/books/v1/volumes?q=isbn:";
+function sendToNotion() {
+  const notionToken = 'secret_lruJvyFNd3aRm8HD5qmZX5JfKeqQdYaGCTxb5lP1z4E'; // NotionのAPIトークン
+  const databaseId = '2517262d6cc0429797696292c1e83583'; // NotionのデータベースID
+
   const isbn = document.getElementById("ISBN").value;
+  const title = document.getElementById("title").value;
+  const subtitle = document.getElementById("subtitle").value;
+  const authors = document.getElementById("authors").value;
+  const publishedDate = document.getElementById("publishedDate").value;
+  const pageCount = document.getElementById("pageCount").value;
+  const imageSrc = document.getElementById("imageSrc").value;
 
-  let request = new XMLHttpRequest();
-  request.open('GET', url + isbn);
-  request.responseType = 'json';
-  request.send();
-
-  request.onload = function() {
-    if (request.status === 200) {
-      const result = request.response;
-      if (result.items && result.items.length > 0) {
-        const volumeInfo = result.items[0].volumeInfo;
-        document.getElementById("title").value = volumeInfo.title || "";
-        document.getElementById("subtitle").value = volumeInfo.subtitle || "";
-        document.getElementById("authors").value = (volumeInfo.authors || []).join(", ") || "";
-        document.getElementById("publishedDate").value = volumeInfo.publishedDate || "";
-        document.getElementById("pageCount").value = volumeInfo.pageCount || "";
-        const imageUrl = "https://images-na.ssl-images-amazon.com/images/P/" + isbn + ".09.LZZZZZZZ.jpg";
-        document.getElementById("imagePlace").src = imageUrl;
-        document.getElementById("imageSrc").value = imageUrl;
-      } else {
-        console.error("No items found for the ISBN.");
+  const data = {
+    parent: { database_id: databaseId },
+    properties: {
+      Title: {
+        title: [
+          {
+            text: {
+              content: title
+            }
+          }
+        ]
+      },
+      ISBN: {
+        rich_text: [
+          {
+            text: {
+              content: isbn
+            }
+          }
+        ]
+      },
+      Subtitle: {
+        rich_text: [
+          {
+            text: {
+              content: subtitle
+            }
+          }
+        ]
+      },
+      Authors: {
+        rich_text: [
+          {
+            text: {
+              content: authors
+            }
+          }
+        ]
+      },
+      PublishedDate: {
+        rich_text: [
+          {
+            text: {
+              content: publishedDate
+            }
+          }
+        ]
+      },
+      PageCount: {
+        rich_text: [
+          {
+            text: {
+              content: pageCount
+            }
+          }
+        ]
+      },
+      Image: {
+        url: imageSrc
       }
-    } else {
-      console.error("Failed to fetch data. Status:", request.status);
     }
   };
 
-  request.onerror = function() {
-    console.error("Request failed.");
-  };
+  fetch('https://api.notion.com/v1/pages', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${notionToken}`,
+      'Content-Type': 'application/json',
+      'Notion-Version': '2022-06-28' // または最新のNotion APIバージョン
+    },
+    body: JSON.stringify(data)
+  })
+  .then(response => response.json())
+  .then(data => {
+    console.log('Success:', data);
+  })
+  .catch((error) => {
+    console.error('Error:', error);
+  });
 }
 </script>
 </head>
 <body>
   <div><canvas id="preview"></canvas></div>
-  <form method="post" name="form" target="dummy" action="https://kanikanidahou.github.io/github-bteam/">
+  <form method="post" name="form" target="dummy">
     <fieldset>
       <div class="container">
         <div class="row">
@@ -148,7 +205,7 @@ function GetData() {
             <label class="col-form-label" for="ISBN">ISBN:</label>
             <!-- quaggaJSでバーコードから読み取ったISBNがここに入力される -->
             <input type="text" name="isbn" id="ISBN" class="form-control"><br>
-            <button type="button" onclick="GetData();" class="btn btn-primary">データ取得</button><br>
+            <button type="button" onclick="sendToNotion();" class="btn btn-primary">Notionに送信</button><br>
             <img src="" id="imagePlace"><br>
             <label class="col-form-label" for="imageSrc">画像URL</label>
             <!-- 画像URLを取得したらsrcを設定する -->
@@ -158,16 +215,4 @@ function GetData() {
             <label class="col-form-label" for="subtitle">サブタイトル</label>
             <input type="text" name="subtitle" id="subtitle" class="form-control"><br>
             <label class="col-form-label" for="authors">著者</label>
-            <input type="text" name="authors" id="authors" class="form-control"><br>
-            <label class="col-form-label" for="publishedDate">発売日</label>
-            <input type="text" name="publishedDate" id="publishedDate" class="form-control"><br>
-            <label class="col-form-label" for="pageCount">ページ数</label>
-            <input type="text" name="pageCount" id="pageCount" class="form-control"><br>
-            <button type="submit" class="btn btn-primary">Notionに送信</button><br>
-          </div>
-        </div>
-      </div>
-    </fieldset>
-  </form>
-</body>
-</html>
+            <input type="text" name="authors
