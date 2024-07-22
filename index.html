@@ -1,232 +1,47 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=0.1, maximum-scale=4, user-scalable=yes">
-    <title>Barcode to Notion</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Send Data to Notion</title>
     <script src="./quagga.min.js"></script>
-    <script>
-        var DetectedCount = 0, DetectedCode = "";
-        var video, tmp, tmp_ctx, prev, prev_ctx, w, h, mw, mh, x1, y1;
-
-        window.addEventListener('load', function (event) {
-            video = document.createElement('video');
-            video.setAttribute("autoplay", "");
-            video.setAttribute("muted", "");
-            video.setAttribute("playsinline", "");
-            video.onloadedmetadata = function (e) { video.play(); };
-            prev = document.getElementById("preview");
-            prev_ctx = prev.getContext("2d", { willReadFrequently: true });
-            tmp = document.createElement('canvas');
-            tmp_ctx = tmp.getContext("2d", { willReadFrequently: true });
-
-            navigator.mediaDevices.getUserMedia(
-                { "audio": false, "video": { "facingMode": "environment", "width": { "ideal": 640 }, "height": { "ideal": 480 } } }
-            ).then(
-                function (stream) {
-                    video.srcObject = stream;
-                    setTimeout(Scan, 500, true);
-                }
-            ).catch(
-                function (err) { console.error('Error:', err); }
-            );
-
-            function Scan(first) {
-                if (first) {
-                    w = video.videoWidth;
-                    h = video.videoHeight;
-                    prev.style.width = (w / 2) + "px";
-                    prev.style.height = (h / 2) + "px";
-                    prev.setAttribute("width", w);
-                    prev.setAttribute("height", h);
-                    mw = w * 0.5;
-                    mh = w * 0.2;
-                    x1 = (w - mw) / 2;
-                    y1 = (h - mh) / 2;
-                }
-                prev_ctx.drawImage(video, 0, 0, w, h);
-                prev_ctx.beginPath();
-                prev_ctx.strokeStyle = "rgb(255,0,0)";
-                prev_ctx.lineWidth = 2;
-                prev_ctx.rect(x1, y1, mw, mh);
-                prev_ctx.stroke();
-                tmp.setAttribute("width", mw);
-                tmp.setAttribute("height", mh);
-                tmp_ctx.drawImage(prev, x1, y1, mw, mh, 0, 0, mw, mh);
-
-                tmp.toBlob(function (blob) {
-                    let reader = new FileReader();
-                    reader.onload = function () {
-                        let config = {
-                            decoder: {
-                                readers: ["ean_reader", "ean_8_reader"],
-                                multiple: false,
-                            },
-                            locator: { patchSize: "large", halfSample: false },
-                            locate: false,
-                            src: reader.result,
-                        };
-                        Quagga.decodeSingle(config, function () { });
-                    }
-                    reader.readAsDataURL(blob);
-                });
-                setTimeout(Scan, 50, false);
-            }
-
-            Quagga.onDetected(function (result) {
-                if (DetectedCode == result.codeResult.code) {
-                    DetectedCount++;
-                } else {
-                    DetectedCount = 0;
-                    DetectedCode = result.codeResult.code;
-                }
-                if (DetectedCount >= 3) {
-                    console.log(result.codeResult.code); // コンソールに出力
-                    document.getElementById("ISBN").value = result.codeResult.code;
-                    GetData(result.codeResult.code);
-                    DetectedCode = '';
-                    DetectedCount = 0;
-                }
-            });
-        });
-
-        function GetData(isbn) {
-            let url = `https://www.googleapis.com/books/v1/volumes?q=isbn:${isbn}`;
-
-            fetch(url)
-                .then(response => response.json())
-                .then(result => {
-                    if (result.items && result.items.length > 0) {
-                        const volumeInfo = result.items[0].volumeInfo;
-                        document.getElementById("title").value = volumeInfo.title || '';
-                        document.getElementById("subtitle").value = volumeInfo.subtitle || '';
-                        document.getElementById("authors").value = (volumeInfo.authors || []).join(', ');
-                        document.getElementById("publishedDate").value = volumeInfo.publishedDate || '';
-                        document.getElementById("pageCount").value = volumeInfo.pageCount || '';
-
-                        const imageUrl = volumeInfo.imageLinks ? volumeInfo.imageLinks.thumbnail : 'https://via.placeholder.com/150';
-                        document.getElementById("imagePlace").src = imageUrl;
-                        document.getElementById("imageSrc").value = imageUrl;
-                    } else {
-                        alert("書籍データが見つかりませんでした。");
-                    }
-                })
-                .catch(error => {
-                    console.error('Error:', error);
-                    alert("データの取得に失敗しました。");
-                });
-        }
-
-        async function sendToNotion() {
-            const token = 'secret_lruJvyFNd3aRm8HD5qmZX5JfKeqQdYaGCTxb5lP1z4E';
-            const databaseId = '2517262d6cc0429797696292c1e83583';
-            const url = `https://api.notion.com/v1/pages`;
-
-            const headers = {
-                "Authorization": `Bearer ${token}`,
-                "Content-Type": "application/json",
-                "Notion-Version": "2021-05-13"
-            };
-
-            const title = document.getElementById("title").value;
-            const subtitle = document.getElementById("subtitle").value;
-            const authors = document.getElementById("authors").value;
-            const publishedDate = document.getElementById("publishedDate").value;
-            const pageCount = document.getElementById("pageCount").value;
-            const imageSrc = document.getElementById("imageSrc").value;
-
-            const payload = {
-                parent: { database_id: databaseId },
-                properties: {
-                    "Title": {
-                        "title": [
-                            {
-                                "text": {
-                                    "content": title
-                                }
-                            }
-                        ]
-                    },
-                    "Subtitle": {
-                        "rich_text": [
-                            {
-                                "text": {
-                                    "content": subtitle
-                                }
-                            }
-                        ]
-                    },
-                    "Authors": {
-                        "multi_select": authors.split(', ').map(name => ({ name }))
-                    },
-                    "Published Date": {
-                        "date": {
-                            "start": publishedDate
-                        }
-                    },
-                    "Page Count": {
-                        "number": parseInt(pageCount)
-                    },
-                    "Image": {
-                        "url": imageSrc
-                    }
-                }
-            };
-
-            try {
-                let response = await fetch(url, {
-                    method: 'POST',
-                    headers: headers,
-                    body: JSON.stringify(payload)
-                });
-
-                if (!response.ok) {
-                    throw new Error('Network response was not ok ' + response.statusText);
-                }
-
-                let data = await response.json();
-                console.log(data);
-                alert("データがNotionに送信されました！");
-            } catch (error) {
-                console.error('There has been a problem with your fetch operation:', error);
-                alert("データの送信に失敗しました。");
-            }
-        }
-    </script>
 </head>
 <body>
-    <div><canvas id="preview"></canvas></div>
-    <form method="post" name="form" target="dummy" action="">
-        <fieldset>
-            <div class="container">
-                <div class="row">
-                    <div class="col-lg-8">
-                        <h3 class="mt-5">
-                            Send To Notion<br>
-                            <small class="text-muted">本のバーコードを読んでNotionに追加</small>
-                        </h3>
-                        <div><canvas id="preview"></canvas></div>
-                        <label class="col-form-label" for="inputDefault">ISBN:</label>
-                        <input type="text" name="isbn" id="ISBN" class="form-control"><br>
-                        <button type="button" onclick="GetData(document.getElementById('ISBN').value);" class="btn btn-primary">データ取得</button><br>
-                        <img src="" id="imagePlace"><br>
-                        <label class="col-form-label" for="inputDefault">画像URL</label>
-                        <input type="text" name="imageSrc" id="imageSrc" class="form-control"><br>
-                        <label class="col-form-label" for="inputDefault">タイトル</label>
-                        <input type="text" name="title" id="title" class="form-control"><br>
-                        <label class="col-form-label" for="inputDefault">サブタイトル</label>
-                        <input type="text" name="subtitle" id="subtitle" class="form-control"><br>
-                        <label class="col-form-label" for="inputDefault">著者</label>
-                        <input type="text" name="authors" id="authors" class="form-control"><br>
-                        <label class="col-form-label" for="inputDefault">発売日</label>
-                        <input type="text" name="publishedDate" id="publishedDate" class="form-control"><br>
-                        <label class="col-form-label" for="inputDefault">ページ数</label>
-                        <input type="text" name="pageCount" id="pageCount" class="form-control"><br>
-                        <button type="button" onclick="sendToNotion();" class="btn btn-primary">Notionに送信</button><br>
-                    </div>
-                </div>
-            </div>
-        </fieldset>
+    <h1>Send Book Data</h1>
+    <form id="bookForm">
+        <label>ISBN:</label>
+        <input type="text" id="isbn" required><br>
+        <label>Title:</label>
+        <input type="text" id="title" required><br>
+        <label>Subtitle:</label>
+        <input type="text" id="subtitle"><br>
+        <label>Authors:</label>
+        <input type="text" id="authors"><br>
+        <label>Published Date:</label>
+        <input type="text" id="publishedDate"><br>
+        <label>Page Count:</label>
+        <input type="text" id="pageCount"><br>
+        <label>Image URL:</label>
+        <input type="text" id="imageUrl"><br>
+        <button type="button" onclick="sendData()">Send Data</button>
     </form>
+
+    <script>
+        async function sendData() {
+            const isbn = document.getElementById('isbn').value;
+            const title = document.getElementById('title').value;
+            const subtitle = document.getElementById('subtitle').value;
+            const authors = document.getElementById('authors').value;
+            const publishedDate = document.getElementById('publishedDate').value;
+            const pageCount = document.getElementById('pageCount').value;
+            const imageUrl = document.getElementById('imageUrl').value;
+
+            const url = 'YOUR_DEPLOYED_WEB_APP_URL'; // Google Apps Script の Web アプリ URL
+
+            const response = await fetch(`${url}?isbn=${encodeURIComponent(isbn)}&title=${encodeURIComponent(title)}&subtitle=${encodeURIComponent(subtitle)}&authors=${encodeURIComponent(authors)}&publishedDate=${encodeURIComponent(publishedDate)}&pageCount=${encodeURIComponent(pageCount)}&imageUrl=${encodeURIComponent(imageUrl)}`);
+            const result = await response.text();
+            alert(result);
+        }
+    </script>
 </body>
 </html>
