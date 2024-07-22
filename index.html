@@ -3,40 +3,149 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>データをNotionに送信</title>
+    <title>バーコードスキャンとデータ送信</title>
     <script src="./quagga.min.js"></script>
     <style>
+        body {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+        }
+
+        #container {
+            position: relative;
+            width: 100%;
+            max-width: 600px;
+            margin-bottom: 20px;
+        }
+
         #barcode-scanner {
             width: 100%;
             height: 300px;
             border: 1px solid black;
+            position: absolute;
+            top: 0;
+            left: 0;
+        }
+
+        #form-container {
+            position: relative;
+            z-index: 1; /* フォームがカメラの映像の上に表示されるようにする */
+            margin-top: 320px; /* カメラの表示領域とフォームを離すため */
+        }
+
+        textarea {
+            width: 100%;
             margin-top: 20px;
         }
     </style>
 </head>
 <body>
     <h1>書籍データの送信</h1>
-    <form id="bookForm">
-        <label>ISBN:</label>
-        <input type="text" id="isbn" required><br>
-        <label>タイトル:</label>
-        <input type="text" id="title" required><br>
-        <label>サブタイトル:</label>
-        <input type="text" id="subtitle"><br>
-        <label>著者:</label>
-        <input type="text" id="authors"><br>
-        <label>出版日:</label>
-        <input type="text" id="publishedDate"><br>
-        <label>ページ数:</label>
-        <input type="text" id="pageCount"><br>
-        <label>画像URL:</label>
-        <input type="text" id="imageUrl"><br>
-        <button type="button" onclick="sendData()">データ送信</button>
-    </form>
 
-    <div id="barcode-scanner"></div>
+    <div id="container">
+        <div id="barcode-scanner"></div>
+        <div id="form-container">
+            <form id="bookForm">
+                <label>ISBN:</label>
+                <input type="text" id="isbn" required><br>
+                <label>タイトル:</label>
+                <input type="text" id="title" required><br>
+                <label>サブタイトル:</label>
+                <input type="text" id="subtitle"><br>
+                <label>著者:</label>
+                <input type="text" id="authors"><br>
+                <label>出版日:</label>
+                <input type="text" id="publishedDate"><br>
+                <label>ページ数:</label>
+                <input type="text" id="pageCount"><br>
+                <label>画像URL:</label>
+                <input type="text" id="imageUrl"><br>
+                <button type="button" onclick="sendData()">データ送信</button>
+            </form>
+        </div>
+    </div>
+
+    <textarea id="jan" rows="10" cols="50" readonly></textarea>
 
     <script>
+        let video = document.createElement('video');
+        let prev = document.createElement('canvas');
+        let prev_ctx = prev.getContext('2d');
+        let tmp = document.createElement('canvas');
+        let tmp_ctx = tmp.getContext('2d');
+        let DetectedCode = '';
+        let DetectedCount = 0;
+
+        function Scan(first) {
+            if (first) {
+                //選択された幅高さ
+                let w = video.videoWidth;
+                let h = video.videoHeight;
+                //画面上の表示サイズ
+                prev.style.width = (w / 2) + "px";
+                prev.style.height = (h / 2) + "px";
+                //内部のサイズ
+                prev.setAttribute("width", w);
+                prev.setAttribute("height", h);
+                let mw = w * 0.5;
+                let mh = w * 0.2;
+                let x1 = (w - mw) / 2;
+                let y1 = (h - mh) / 2;
+
+                prev_ctx.drawImage(video, 0, 0, w, h);
+                prev_ctx.beginPath();
+                prev_ctx.strokeStyle = "rgb(255,0,0)";
+                prev_ctx.lineWidth = 2;
+                prev_ctx.rect(x1, y1, mw, mh);
+                prev_ctx.stroke();
+                tmp.setAttribute("width", mw);
+                tmp.setAttribute("height", mh);
+                tmp_ctx.drawImage(prev, x1, y1, mw, mh, 0, 0, mw, mh);
+
+                tmp.toBlob(function (blob) {
+                    let reader = new FileReader();
+                    reader.onload = function () {
+                        let config = {
+                            decoder: {
+                                readers: ["ean_reader", "ean_8_reader"],
+                                multiple: false, //同時に複数のバーコードを解析しない
+                            },
+                            locator: { patchSize: "large", halfSample: false },
+                            locate: false,
+                            src: reader.result,
+                        };
+                        Quagga.decodeSingle(config, function (result) {
+                            // 必要に応じてここで結果を処理する
+                        });
+                    }
+                    reader.readAsDataURL(blob);
+                });
+            } else {
+                // バーコードスキャンの処理を続ける
+                setTimeout(function() { Scan(false); }, 50);
+            }
+        }
+
+        Quagga.onDetected(function (result) {
+            //読み取り誤差が多いため、3回連続で同じ値だった場合に成功とする
+            if (DetectedCode == result.codeResult.code) {
+                DetectedCount++;
+            } else {
+                DetectedCount = 0;
+                DetectedCode = result.codeResult.code;
+            }
+            if (DetectedCount >= 3) {
+                console.log(result.codeResult.code);
+                let jan = document.getElementById('jan');
+                jan.value += result.codeResult.code + '\n';
+                jan.scrollTop = jan.scrollHeight;
+                DetectedCode = '';
+                DetectedCount = 0;
+            }
+        });
+
         // QuaggaJSの初期化
         function startScanner() {
             Quagga.init({
@@ -56,10 +165,8 @@
                 Quagga.start();
             });
 
-            Quagga.onDetected(function(data) {
-                document.getElementById('isbn').value = data.codeResult.code;
-                Quagga.stop();
-            });
+            // ここでスキャンを開始する
+            Scan(true);
         }
 
         function sendData() {
@@ -71,13 +178,32 @@
             const pageCount = document.getElementById('pageCount').value;
             const imageUrl = document.getElementById('imageUrl').value;
 
-            // Google Apps ScriptのURLは削除し、Notionに対応したAPIに置き換えてください
-            const url = 'https://api.notion.com/v1/pages'; 
+            // Google Apps ScriptのWebアプリURL
+            const scriptUrl = 'YOUR_DEPLOYED_WEB_APP_URL';
 
-            fetch(`${url}?isbn=${encodeURIComponent(isbn)}&title=${encodeURIComponent(title)}&subtitle=${encodeURIComponent(subtitle)}&authors=${encodeURIComponent(authors)}&publishedDate=${encodeURIComponent(publishedDate)}&pageCount=${encodeURIComponent(pageCount)}&imageUrl=${encodeURIComponent(imageUrl)}`)
-                .then(response => response.text())
-                .then(result => alert(result))
-                .catch(error => console.error('Error:', error));
+            fetch(scriptUrl, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    isbn: isbn,
+                    title: title,
+                    subtitle: subtitle,
+                    authors: authors,
+                    publishedDate: publishedDate,
+                    pageCount: pageCount,
+                    imageUrl: imageUrl
+                })
+            })
+            .then(response => response.text())
+            .then(result => {
+                alert("データがNotionに送信されました！");
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert("データの送信に失敗しました。");
+            });
         }
 
         // ページ読み込み時にスキャナーを開始
