@@ -12,6 +12,7 @@
             align-items: center;
             padding: 20px;
             margin: 0;
+            font-family: Arial, sans-serif;
         }
 
         #barcode-scanner {
@@ -25,16 +26,37 @@
         #form-container {
             width: 100%;
             max-width: 600px;
-        }
-
-        #form-container form {
             display: flex;
             flex-direction: column;
+            gap: 10px; /* フォームの各要素間にスペースを確保 */
+        }
+
+        #form-container input, #form-container button {
+            padding: 8px;
+            margin-top: 5px;
+        }
+
+        button {
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background-color: #45a049;
         }
 
         textarea {
             width: 100%;
+            max-width: 600px;
+            height: 150px;
             margin-top: 20px;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+            resize: none; /* テキストエリアのサイズ変更を禁止 */
         }
     </style>
 </head>
@@ -63,7 +85,7 @@
         </form>
     </div>
 
-    <textarea id="jan" rows="10" cols="50" readonly></textarea>
+    <textarea id="jan" readonly></textarea>
 
     <script>
         let video = document.createElement('video');
