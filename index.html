@@ -1,8 +1,8 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=0.1, maximum-scale=4, user-scalable=yes">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <script src="./quagga.min.js"></script>
 <script>
 var DetectedCount = 0, DetectedCode = "";
@@ -115,7 +115,7 @@ function GetData() {
 }
 
 function sendToNotion() {
-  const scriptUrl = 'https://script.google.com/macros/s/YOUR_DEPLOYMENT_ID/exec'; // Google Apps ScriptのURL
+  const serverUrl = 'http://localhost:3000/api/send-to-notion'; // Node.jsサーバーのURL
 
   const data = {
     isbn: document.getElementById("ISBN").value,
@@ -127,13 +127,12 @@ function sendToNotion() {
     imageSrc: document.getElementById("imageSrc").value
   };
 
-  fetch(scriptUrl, {
+  fetch(serverUrl, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json'
     },
     body: JSON.stringify(data)
-    mode: 'cors' 
   })
   .then(response => response.json())
   .then(result => {
