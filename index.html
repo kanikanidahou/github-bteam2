@@ -115,7 +115,7 @@ function GetData() {
 }
 
 function sendToNotion() {
-  const serverUrl = 'https://9dc0-160-86-249-54.ngrok-free.app /api/send-to-notion '; // Node.jsサーバーのURL
+  const scriptUrl = 'https://9dc0-160-86-249-54.ngrok-free.app/api/send-to-notion'; // ngrokのURL
 
   const data = {
     isbn: document.getElementById("ISBN").value,
@@ -127,12 +127,13 @@ function sendToNotion() {
     imageSrc: document.getElementById("imageSrc").value
   };
 
-  fetch(serverUrl, {
+  fetch(scriptUrl, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json'
     },
-    body: JSON.stringify(data)
+    body: JSON.stringify(data),
+    mode: 'cors' // CORSモードを指定
   })
   .then(response => response.json())
   .then(result => {
